@@ -18,7 +18,7 @@ def studio():
 
 
 @app.route("/history")
-def studio():
+def history():
     return render_template("history.html", designs=[])
 
 
