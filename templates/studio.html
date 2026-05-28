@@ -14,7 +14,7 @@ block content %}
       <div class="form-group">
         <label class="form-label">SILHOUETTE STYLE</label>
         <div class="chip-group" data-field="style">
-          <button type="button" class="chip" data-value="casual">Casual</button>
+          <button type="button" class="chip active" data-value="casual">Casual</button>
           <button type="button" class="chip" data-value="athletic">
             Athletic
           </button>
@@ -255,7 +255,7 @@ block content %}
         </div>
         <div class="detail-card">
           <h4 class="detail-title">Sole System</h4>
-          <ul class="detail-list" id="soleText"></ul>
+          <p class="detail-text" id="soleText"></p>
         </div>
       </div>
       <!-- actions -->
@@ -266,7 +266,7 @@ block content %}
     </div>
   </section>
 </section>
-{% endblock %}{% block scripts%}
+{% endblock %}{% block scripts %}
 <script>
   // make site key available to studio
   window.HCAPTCHA_SITE_KEY = "{{ hcaptcha_site_key }}";

@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block title %}Design History - SOLE/AI{% endblock
-%}{% block content%}
+%}{% block content %}
 
 <section class="history-page">
   <div class="history-header">
@@ -7,7 +7,7 @@
       <h1 class="page-title">Design History</h1>
       <p class="page-sub">Your generated concepts, saved this session.</p>
     </div>
-    {% if designs%}
+    {% if designs %}
     <form
       action="{{ url_for('clear_history')}}"
       method="POST"
@@ -46,7 +46,7 @@
               --lace-color: {{entry.concept.colorways[0].lace if entry.concept.colorways else '#FAEBC8'}}
               --midsole-color: {{entry.concept.colorways[0].tongue if entry.concept.colorways else '#FAEBC8'}}"
       >
-        {% if entry.image_url%}
+        {% if entry.image_url %}
         <div class="card-ai-img-wrap">
           <img
             src="{{entry.image_url }}"
@@ -56,7 +56,7 @@
           />
           <span class="card-ai-badge">AI</span>
         </div>
-        {%else%}{% include "sneaker_svg.html" %}{% endif%}
+        {% else %}{% include "sneaker_svg.html" %}{% endif %}
       </div>
       <!-- card info -->
       <div class="card-body">
@@ -69,21 +69,21 @@
 
         <!-- style tags -->
         <div class="card-tags">
-          {% for tag in (entry.concept.style_tags or [])[:3]%}
+          {% for tag in (entry.concept.style_tags or [])[:3] %}
           <span class="tag">{{tag}}</span>
           {% endfor %}
-          <span class="tag tag--price">{{ entry.concept.retail_price}}</span>
+          <span class="tag tag--price">{{ entry.concept.retail_price }}</span>
         </div>
 
         <!-- colorway  swatches-->
         <div class="card-colorways">
-          {% for cw in entry.concept.colorways%}
+          {% for cw in entry.concept.colorways %}
           <div class="swatch-group" title="{{cw.name}}">
             <div class="swatch" style="background: {{cw.upper}}"></div>
             <div class="swatch" style="background: {{cw.accent}}"></div>
             <div class="swatch" style="background: {{cw.sole}}"></div>
           </div>
-          {%endfor%}
+          {% endfor %}
         </div>
 
         <!-- prefs pill row-->

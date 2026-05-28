@@ -27,7 +27,7 @@ https://js.hcaptcha.com/1/api.js?render=explicit&onload=hcaptchaReady"
       rel="stylesheet"
       href="{{url_for('static', filename='css/style.css')}}"
     />
-    {% block head%}{% endblock %}
+    {% block head %} {% endblock %}
 
     <script>
       // redirect to home on page refresh ( but not on the first load or navigation)
@@ -77,7 +77,7 @@ https://js.hcaptcha.com/1/api.js?render=explicit&onload=hcaptchaReady"
     </nav>
 
     <!-- page contenct--------- -->
-    <main>{% block contenct %}{% endblock %}</main>
+    <main>{% block content %}{% endblock %}</main>
 
     <!-- FOOTER ---------------- -->
     <footer class="footer">

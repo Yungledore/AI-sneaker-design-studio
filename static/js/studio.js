@@ -8,7 +8,7 @@
 
   // chip selection
   document.querySelectorAll(".chip-group").forEach((group) => {
-    const huddenInput = document.getElementById(group.dataset.field);
+    const hiddenInput = document.getElementById(group.dataset.field);
     group.querySelectorAll(".chip").forEach((chip) => {
       chip.addEventListener("click", () => {
         group
