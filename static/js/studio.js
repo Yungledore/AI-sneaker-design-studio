@@ -106,5 +106,6 @@
         g.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
         c.classList.add('active');
         if (inp) inp.value = c.dataset.value;
-      }))
-    })
+      }));
+    });
+  })
