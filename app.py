@@ -1,6 +1,7 @@
-# Lesson 2 - generating sneaker concepts with AI Goal: Connect Groq LlaMA 3. /generate returns a concept JSON No captcha yet - click Generate and see the concept appear Run : python app.py visit http:localhost:5000
+# Lesson 3 - adding verification to the AI Generation flow Goal: Add hcaptcha server-side verification to /generate The captcha modal pops up before generation starts. Run: python app.py visit http://localhost:5000
 
-import os, json
+
+import os, json, requests
 from flask import Flask, render_template, request, jsonify
 from groq import Groq
 from dotenv import load_dotenv
@@ -10,7 +11,9 @@ app = Flask(__name__)
 app.secret_key = "sneaker-studio-dev-key"
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-HCAPTCHA_SITE_KEY = os.environ.get("HCAPTCHA_SITE_KEY", "")
+HCAPTCHA_SITE_KEY = os.environ.get("HCAPTCHA_SITE_KEY", "10000000-ffff-ffff-ffff-000000000001")
+HCAPTCHA_SECRET = os.environ.get("HCAPTCHA_SECRET_KEY", "0x0000000000000000000000000000000000000000")
+HCAPTCHA_VERIFY_URL = "https://api.hcaptcha.com/siteverify"
 groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 DESIGN_PROMPT = """You are an expert sneaker designer. Generate a detailed concept based on: Style: {style}, Primary Color: {primary_color}, Accent Color: {accent_color}, Material: {material}, Occasion: {occasion}, Inspiration: {inspiration}
@@ -24,6 +27,14 @@ Generate exactly 3 colorways: user color first then crate 2 creative variations.
 def get_prefs(data):
     fields = [("style","casual"),("primary_color","white"),("accent_color","black"),        ("material","leather"),("occasion","everyday"),("inspiration","")]
     return {k: data.get(k, d) for k, d in fields}
+
+def verify_hcaptcha(token):
+    try:
+        r= requests.post(HCAPTCHA_VERIFY_URL,
+                         data={"secret": HCAPTCHA_SECRET, "response": token}, timeout=5)
+        return r.json().get("success", False)
+    except Exception:
+        return False
 
 def generate_concept(prefs):
     if not groq_client:
@@ -49,7 +60,7 @@ def index():
 
 @app.route("/studio")
 def studio():
-    return render_template("studio.html", hcaptcha_site_key="")
+    return render_template("studio.html", hcaptcha_site_key="HCAPTCHA_SITE_KEY")
 
 
 @app.route("/history")
@@ -59,6 +70,11 @@ def history():
 @app.route("/generate", methods=["POST"])
 def generate():
     data = request.get_json(silent=True) or request.form
+    token = data.get("h-captcha-response", "")
+    if not token:
+        return jsonify({"error": "Please completed the CAPTCHA."}), 400
+    if not verify_hcaptcha(token):
+        return jsonify({"error": "CAPTCHA verification failed."}), 400
     prefs = get_prefs(data)
     try:
         concept = generate_concept(prefs)
