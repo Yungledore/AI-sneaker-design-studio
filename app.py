@@ -1,19 +1,21 @@
-# Lesson 3 - adding verification to the AI Generation flow Goal: Add hcaptcha server-side verification to /generate The captcha modal pops up before generation starts. Run: python app.py visit http://localhost:5000
+# Lesson 4 - Building Dynamic Sneaker Requests with JSON and Fetch Goa: add /generate-image route + huggingFace FLUX image generation. after concept loads, the image section fetches and displays the ai render. Run: python app.py visit http://localhost:5000
 
 
-import os, json, requests
+import os, json, requests, base64
 from flask import Flask, render_template, request, jsonify
 from groq import Groq
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"), override=True, encoding="utf-8-sig")
 app = Flask(__name__)
 app.secret_key = "sneaker-studio-dev-key"
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+HF_API_KEY = os.environ.get("HF_API_KEY", "")
 HCAPTCHA_SITE_KEY = os.environ.get("HCAPTCHA_SITE_KEY", "10000000-ffff-ffff-ffff-000000000001")
 HCAPTCHA_SECRET = os.environ.get("HCAPTCHA_SECRET_KEY", "0x0000000000000000000000000000000000000000")
 HCAPTCHA_VERIFY_URL = "https://api.hcaptcha.com/siteverify"
+HF_IMAGE_URL = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell"
 groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 DESIGN_PROMPT = """You are an expert sneaker designer. Generate a detailed concept based on: Style: {style}, Primary Color: {primary_color}, Accent Color: {accent_color}, Material: {material}, Occasion: {occasion}, Inspiration: {inspiration}
@@ -35,12 +37,26 @@ def verify_hcaptcha(token):
         return r.json().get("success", False)
     except Exception:
         return False
+    
+def hex_to_color_name(h):
+    h = h.lstrip('#').lower()
+    try: r, g, b = int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
+    except: return h
+    mx, mn = max(r,g,b), min(r,g,b)
+    br, sat = mx/255, (mx-mn)/mx if mx else 0
+    if br < 0.15: return "black"
+    if br > 0.88 and sat < 0.15: return "white"
+    if sat < 0.18: return "dark gray" if br < 0.4 else "gray" if br < 0.65 else "light gray"
+    if mx == r: return ("orange" if g > 120 else "dark orange") if g > b+60 else "magenta" if b > g+40 else "red"
+    if mx == g: return "yellow-green" if r > b+60 else "cyan-green" if b> r+40 else "green"
+    if mx == b: return "purple" if r > g+60 else "cyan" if g > r+40 else "blue"
+    return "colorful"
 
 def generate_concept(prefs):
     if not groq_client:
         raise RuntimeError("GROQ_API_KEY not set.")
     chat = groq_client.chat.completions.create(
-        model="llama-3.3-70-versatile",
+        model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": "Sneaker design expert. Pure JSON only."},
             {"role": "user", "content": DESIGN_PROMPT.format(**prefs)},
@@ -53,6 +69,28 @@ def generate_concept(prefs):
         if raw.startswith("json"): raw = raw[4:]
     return json.loads(raw.strip().rstrip("```").strip())
 
+def generate_sneaker_image(prompt):
+    if not HF_API_KEY:
+        return None
+    try:
+        r = requests.post(HF_IMAGE_URL, headers={"Authorization": f"Bearer {HF_API_KEY}", "Content-Type": "application/json"},
+                          json={"inputs": prompt}, timeout=60)
+        if r.status_code == 200 and r.headers.get("content-type", "").startswith("image"):
+            mime = r.headers["content-type"].split(";")[0].strip()
+            return f"data:{mime};base64,{base64.b64encode(r.content).decode()}"
+    except Exception:
+        pass
+    return None
+
+def build_image_prompt(prefs):
+    p = hex_to_color_name(prefs["primary_color"])
+    a = hex_to_color_name(prefs["accent_color"])
+    prompt = (f"Professional product photography of a {prefs['style']} sneaker, " f"{p} {prefs['material']} upper, {a} accent, {a} heel, white sole, " f"side view, white background, sharp focus, 8k, shoe only")
+    if prefs.get("inspiration"):
+        prompt += f", {prefs['inspiration']} theme"
+    return prompt
+
+
 
 @app.route("/")
 def index():
@@ -60,7 +98,7 @@ def index():
 
 @app.route("/studio")
 def studio():
-    return render_template("studio.html", hcaptcha_site_key="HCAPTCHA_SITE_KEY")
+    return render_template("studio.html", hcaptcha_site_key=HCAPTCHA_SITE_KEY)
 
 
 @app.route("/history")
@@ -82,7 +120,21 @@ def generate():
         return jsonify({"error": f"Malformed AI response: {e}"}), 500
     except Exception as e:
         return jsonify({"error": f"Concept generation failed: {e}"}), 500
+    concept["image_prompt"] = build_image_prompt(prefs)
     return jsonify({"success": True, "concept": concept, "prefs": prefs})
+
+@app.route("/generate-image", methods=["POST"])
+def generate_image():
+    data = request.get_json(silent=True) or {}
+    prompt = data.get("image_prompt", "")
+    if not prompt:
+        return jsonify({"error": "No image prompt."}), 400
+    if not HF_API_KEY:
+        return jsonify({"error": "HF_API_KEY not configured."}), 503
+    image_url = generate_sneaker_image(prompt)
+    if not image_url:
+        return jsonify({"error": "Image generation failed. Try again."}), 500
+    return jsonify({"success": True, "image_url": image_url})
 
 
 if __name__ == "__main__":
