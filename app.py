@@ -1,4 +1,4 @@
-# Lesson 4 - Building Dynamic Sneaker Requests with JSON and Fetch Goa: add /generate-image route + huggingFace FLUX image generation. after concept loads, the image section fetches and displays the ai render. Run: python app.py visit http://localhost:5000
+# Lesson 5 - Creating Sneaker visuals anddesign variations Goal: SVG colorway explorer - switch tabs to recolor the sneaker live. AI image generates alongside the concept. history still empty (lesson 6). Run: python app.py visit http://localhost:5000
 
 
 import os, json, requests, base64
@@ -32,7 +32,7 @@ def get_prefs(data):
 
 def verify_hcaptcha(token):
     try:
-        r= requests.post(HCAPTCHA_VERIFY_URL,
+        r = requests.post(HCAPTCHA_VERIFY_URL,
                          data={"secret": HCAPTCHA_SECRET, "response": token}, timeout=5)
         return r.json().get("success", False)
     except Exception:

@@ -119,7 +119,7 @@
       size: "compact",
       callback: (token) => {
         captchaModal.classList.add("hidden");
-        runGenerator(token);
+        runGeneration(token);
       },
       "expired-callback": () => {
         captchaModal.classList.add("hidden");
@@ -136,7 +136,7 @@
       return;
     }
     hcaptcha.reset(captchaWidgetId);
-    captchaCancel.classList.remove("hidden");
+    captchaModal.classList.remove("hidden");
   });
   captchaCancel?.addEventListener("click", () => {
     captchaModal.classList.add("hidden");
@@ -226,13 +226,13 @@
     regenImgBtn?.classList.remove("hidden");
   };
   // colorway svg
-  const applyColorway = (sw, el) => {
+  const applyColorway = (cw, el) => {
     const svg = el.querySelector(".sneaker-svg") || el;
     [
       ["--upper-color", cw.upper],
       ["--panel-color", cw.sole],
-      ["--accent-color", cw.accent],
       ["--toe-color", cw.upper],
+      ["--accent-color", cw.accent],
       ["--lace-color", cw.lace],
       ["--midsole-color", cw.tongue],
     ].forEach(([p, v]) => svg.style.setProperty(p, v || ""));
@@ -250,17 +250,17 @@
       ["Tongue", currentColorways[idx].tongue],
     ]
       .map(
-        ([L, c]) =>
-          `<div class="cw-color-item"><div class="cw-dot" style="background:${c}"></div><strong style="color:var(--text)">${c}</strong></div>`,
+        ([l, c]) =>
+          `<div class="cw-color-item"><div class="cw-dot" style="background:${c}"></div>${l}:<strong style="color:var(--text)">${c}</strong></div>`
       )
       .join("");
   };
-  const buildColorewayTabs = (cws) => {
+  const buildColorwayTabs = (cws) => {
     colorwayTabs.innerHTML = "";
-    cws.foreach((cw, i) => {
+    cws.forEach((cw, i) => {
       const btn = document.createElement("button");
-      btn.className = "cw-tap" + (i === 0 ? " active" : "");
-      btn.innerHTML = `<span class="cw-swatch" style="background:${cw.upper}"></span><span class="cw-swatch" style="background:${cw.accent}">${esc(cw.name)}`;
+      btn.className = "cw-tab" + (i === 0 ? " active" : "");
+      btn.innerHTML = `<span class="cw-swatch" style="background:${cw.upper}"></span><span class="cw-swatch" style="background:${cw.accent}"></span>${esc(cw.name)}`;
       btn.addEventListener("click", () => selectColorway(i));
       colorwayTabs.appendChild(btn);
     });
@@ -306,7 +306,7 @@
     }
   };
   // main flow
-  const runGenerator = async (token) => {
+  const runGeneration = async (token) => {
     const prefs = collectPrefs();
     generateBtn.disabled = true;
     setUI("loading");
