@@ -72,7 +72,7 @@
     loadingState = $("loadingState");
   const loaderText = $("loaderText"),
     stageGroq = $("stageGroq"),
-    stageHf = $("stageHf"),
+    stageHF = $("stageHF"),
     result = $("result");
   const resultName = $("resultName"),
     resultTagline = $("resultTagline"),
@@ -80,15 +80,17 @@
   const resultPrice = $("resultPrice"),
     resultAudience = $("resultAudience"),
     resultDesc = $("resultDesc");
-  const materialList = $("materialList"),
+  const materialsList = $("materialsList"),
     featuresList = $("featuresList"),
     soleText = $("soleText");
   const colorwayTabs = $("colorwayTabs"),
     colorwayInfo = $("colorwayInfo"),
     sneakerStage = $("sneakerStage");
-  const imgError = $("imgError"),
-    imgFrame = $("imgFrame"),
+  const imgLoading = $("imgLoading"),
+      imgFrame = $("imgFrame"),
     aiImage = $("aiImage");
+  const imgError = $("imgError"),
+    imgErrorText = $("imgErrorText");
   const captchaModal = $("captchaModal"),
     captchaCancel = $("captchaCancel");
 
@@ -162,7 +164,7 @@
     if (!p || !t) return;
     p.addEventListener("input", () => (t.value = p.value));
     t.addEventListener("input", () => {
-      if (/^#[0-9A-Fa-f]{6}$/.text(t.value)) p.value = t.value;
+      if (/^#[0-9A-Fa-f]{6}$/.test(t.value)) p.value = t.value;
     });
   };
   syncColor("primary_color", "primary_color_text");
@@ -182,7 +184,7 @@
     loaderText.textContent = LOADER_MSGS[0];
     loaderInterval = setInterval(() => {
       i = (i + 1) % LOADER_MSGS.length;
-      loaderText.textContent * LOADER_MSGS[i];
+      loaderText.textContent = LOADER_MSGS[i];
     }, 1400);
   };
   const stopLoader = () => {
@@ -199,7 +201,7 @@
   };
   const setStage = (a) => {
     stageGroq?.classList.toggle("stage-pill--active", a === "groq");
-    stageHf?.classList.toggle("stage-pill--active", a === "hf");
+    stageHF?.classList.toggle("stage-pill--active", a === "hf");
     stageGroq?.classList.toggle("stage-pill--done", a === "hf");
   };
 
@@ -271,16 +273,16 @@
     resultName.textContent = c.name || "";
     resultTagline.textContent = c.tagline || "";
     resultPrice.textContent = c.retail_price || "";
-    resultAudience.textcontent = c.target_audience || "";
+    resultAudience.textContent = c.target_audience || "";
     resultDesc.textContent = c.description || "";
-    resultTags.textContent = (c.style_tags || []).join(" ");
-    materialList.innerHTML = (c.materials || [])
+    resultTags.textContent = (c.style_tags || []).join(" . ");
+    materialsList.innerHTML = (c.materials || [])
       .map((m) => `<li>${esc(m)}</li>`)
       .join("");
     featuresList.innerHTML = (c.features || [])
       .map((f) => `<li>${esc(f)}</li>`)
       .join("");
-    soleText.textcontent = c.sole_type || [];
+    soleText.textContent = c.sole_type || "—";
     currentColorways = c.colorways || [];
     if (currentColorways.length) {
       buildColorwayTabs(currentColorways);
@@ -292,10 +294,10 @@
     setStage("hf");
     showImgLoading();
     try {
-      const r = await fetch("/generate", {
+      const r = await fetch("/generate-image", {
         method: "POST",
-        headers: { "Content-Type": "aplicatipon/json" },
-        body: JSON.stringify({ img_prompt: prompt }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_prompt: prompt }),
       });
       const d = await r.json();
       if (!r.ok || d.error)
@@ -351,7 +353,7 @@
     setUI("empty");
     currentConcept = null;
     document
-      .querySelectorAll(".form-panel")
+      .querySelector(".form-panel")
       ?.scrollIntoView({ behavior: "smooth" });
   });
 })();
