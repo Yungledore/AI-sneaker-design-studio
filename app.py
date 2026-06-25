@@ -1,8 +1,9 @@
 # Lesson 5 - Creating Sneaker visuals anddesign variations Goal: SVG colorway explorer - switch tabs to recolor the sneaker live. AI image generates alongside the concept. history still empty (lesson 6). Run: python app.py visit http://localhost:5000
 
 
-import os, json, requests, base64
-from flask import Flask, render_template, request, jsonify
+import os, json, requests, base64, uuid
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -90,7 +91,17 @@ def build_image_prompt(prefs):
         prompt += f", {prefs['inspiration']} theme"
     return prompt
 
+def save_to_history(concept, prefs, image_url=None):
+    session.setdefault("history", [])
+    entry = {
+        "id": str(uuid.uuid4()[:8]),
+        "timestamp": datetime.now().strftime("%b %d, %Y . %I:%M %p"),
+        "concept": concept,
+        "prefs": prefs,
+        "image_url": image_url,
 
+    }
+    session["history"] = ([entry] + session["history"])[:20]
 
 @app.route("/")
 def index():
@@ -103,7 +114,12 @@ def studio():
 
 @app.route("/history")
 def history():
-    return render_template("history.html", designs=[])
+    return render_template("history.html", designs=session.get("history", []))
+
+@app.route("/clear-history", methods=["POST"])
+def clear_history():
+    session.pop("history", None)
+    return redirect(url_for("history"))
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -121,12 +137,14 @@ def generate():
     except Exception as e:
         return jsonify({"error": f"Concept generation failed: {e}"}), 500
     concept["image_prompt"] = build_image_prompt(prefs)
+    save_to_history(concept, prefs)
     return jsonify({"success": True, "concept": concept, "prefs": prefs})
 
 @app.route("/generate-image", methods=["POST"])
 def generate_image():
     data = request.get_json(silent=True) or {}
     prompt = data.get("image_prompt", "")
+    history_id = data.get("history_id", "")
     if not prompt:
         return jsonify({"error": "No image prompt."}), 400
     if not HF_API_KEY:
@@ -134,6 +152,12 @@ def generate_image():
     image_url = generate_sneaker_image(prompt)
     if not image_url:
         return jsonify({"error": "Image generation failed. Try again."}), 500
+    if history_id and "history" in session:
+        for entry in session["history"]:
+            if entry["id"] == history_id:
+                entry["image_url"] = image_url
+                break
+        session.modified = True
     return jsonify({"success": True, "image_url": image_url})
 
 
